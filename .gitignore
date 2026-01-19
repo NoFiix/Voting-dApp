@@ -1,0 +1,10 @@
+node_modules/
+Frontend/node_modules/
+Backend/node_modules/
+
+Frontend/.next/
+Frontend/dist/
+
+Backend/artifacts/
+Backend/cache/
+Backend/typechain/
