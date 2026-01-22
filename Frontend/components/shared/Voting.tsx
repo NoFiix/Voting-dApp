@@ -29,6 +29,8 @@ const Voting = () => {
   const [voterId, setVoterId] = useState<bigint | null>(null);
   const [voted, setVoted] = useState(false);
 
+  const [toastWhitelist, setToastWhitelist] = useState(false);
+
   const workflowLabels = [ 
         "RegisteringVoters",
         "ProposalsRegistrationStarted",
@@ -57,8 +59,8 @@ const Voting = () => {
     functionName: 'getVoter',
     args: [addressToQuery],
     query: {
-      enabled: Boolean(addressToQuery),
-      refetchOnMount: false,           // 👈 Ne pas refetch au montage du composant
+      enabled: false,
+      refetchOnMount: true,           // 👈 Ne pas refetch au montage du composant
       refetchOnReconnect: false,       // 👈 Ne pas refetch à la reconnexion
       gcTime: 0, 
     }
@@ -95,6 +97,9 @@ const Voting = () => {
     description: string
     voteCount: bigint
   }[] | undefined
+    error: any
+    isLoading: boolean
+    refetch: any
    }
    
   // Voter pour une proposition en choisissant un ID
@@ -128,6 +133,8 @@ const Voting = () => {
     description: string
     voteCount: bigint
     }
+    error: any
+    refetch: any
   }
 
   // ---------- Workflow -----------------------------------------------------
@@ -136,7 +143,6 @@ const Voting = () => {
   // ---------- Workflow changement ------------------------------------------
   const {data: workflowStatus, 
     error: workflowStatusError,
-    isLoading: workflowStatusIsLoading,
     refetch: refetchWorkflowStatus
   } = useReadContract({
     address : contractAddress,
@@ -160,6 +166,7 @@ const Voting = () => {
     } else if (status === 4) {
       await tallyVotes()
     }
+
   }
 
   const startProposalsRegistering = async() => {
@@ -205,77 +212,85 @@ const Voting = () => {
 // ----------- useEffect -----------------------------------------------------
 // ---------------------------------------------------------------------------
 
-  // On vérifie le Workflow Status niveau console qu'on rentre dans la boucle
+  // Whitelist
   useEffect(() => {
-    if (workflowStatus) {
-      toast.success("Workflow status updated BIIIIIS");
-      }
+    if (isSuccess && toastWhitelist) {
+      toast.success("The address have been whitelisted");
+      setToastWhitelist(false);
+    }
+    // erreur AVANT minage (adresse invalide, revert immédiat)
+    if (error && toastWhitelist) {
+      toast.error(
+        error.shortMessage ||
+        error.message ||
+        "Whitelist failed"
+      );
+      setToastWhitelist(false);
+    }
+    // erreur APRÈS envoi (revert on-chain)
+    if (errorConfirmation && toastWhitelist) {
+      toast.error(
+        errorConfirmation?.message ||
+        "Whitelist failed"
+      );
+      setToastWhitelist(false);
+    }
+  }, [toastWhitelist, isSuccess, error, errorConfirmation])
+
+  // Get whitelist address
+  useEffect(() => {
+    if(voterData) {
+      toast.success("Get whitelist address succed")
+    } 
+    if (errorToGetVoter) {
+      toast.error(
+        errorToGetVoter.shortMessage ||
+        errorToGetVoter.message ||
+        `You didn't succed to get whitelist address information`        
+      );
+    }
+  }, [voterData, errorToGetVoter])
+
+  // WorkflowStatus
+  useEffect(() => {
     if(workflowStatusError) {
       toast.error(`Workflow status update error: ${workflowStatusError.shortMessage || workflowStatusError.message}`)
       }
-  }, [workflowStatus, workflowStatusError, refetchWorkflowStatus])
+  }, [workflowStatusError, refetchWorkflowStatus])
 
 
   useEffect(() => {
     if (isSuccess) {
       toast.success("Transaction confirmed");
-      refetchWorkflowStatus();
-      refetchPropositions();
+      refetchWorkflowStatus(); // on récupère le workflow status
+      refetchPropositions(); // on récupère toutes les propositions données
       if (workflowStatus === 4) {
         refetchWinner(); // On determine également le winner une fois ce workflowStatus choisit
         refetchWinnerProposition(); // On part chercher la proposition du winner
       }
     }
-    if (isSuccess && voted) {
-      toast.success("Your vote have been contabelized");
-      setVoterAddress(false);
-    }
     if (errorConfirmation) {
       toast.error(errorConfirmation.message)
     }
-    if (errorConfirmation && voted) {
-      toast.error(errorConfirmation.message)
+    if (isSuccess && voted){
+      toast.success("Your vote have been contabelized");
+      setVoterAddress(false);
+    }
+    if ((errorConfirmation && voted) || (error && voted)) {
+      toast.error(errorConfirmation?.message)
       setVoterAddress(false);
     }
 
-  }, [isSuccess, errorConfirmation, refetchPropositions, voted, refetchWorkflowStatus])
-
-
-  useEffect(() => {
-    console.log("la proposition envoyé est ", voterProposition)
-  }, [voterProposition])
-
-
-  useEffect(() => {
-    console.log("voterData raw:", voterData)
-  }, [voterData])
-
-
-  useEffect(() => {
-    console.log('les propositions :', {propositionsData});
-  }, [propositionsData])
-
-
-  useEffect(() => {
-    if (propositionsError) {
-      console.error("getProposals error:", propositionsError)
-    }
-  }, [propositionsError])
+  }, [isSuccess, errorConfirmation, refetchPropositions, voted, error, refetchWorkflowStatus])
 
   
   return (
     <div className="flex flex-col w-full">
-
-      <h2 className="mb-4 text-4xl">Get</h2>
-      <div className="flex">
-        what address you want to whitelist ? : <span className="font-bold"> 0x...</span>
-      </div>
-      <h2 className="mt-7 mb-4 text-4xl">Set whitelist address</h2>
       <div className="flex flex-col w-full">
         {hash &&  
           <Alert className ="mb-4 bg-lime-200">
             <CheckCircle2Icon/>
-            <AlertTitle>Information</AlertTitle>
+            <AlertTitle>Transaction confirmed</AlertTitle>
             <AlertDescription>
               Transaction hash: {hash}
             </AlertDescription>
@@ -290,7 +305,7 @@ const Voting = () => {
             </AlertDescription>
           </Alert>
         }
-        {isSuccess && 
+        {/*isSuccess && 
           <Alert className ="mb-4 bg-lime-200">
             <CheckCircle2Icon/>
             <AlertTitle>Information</AlertTitle>
@@ -298,14 +313,13 @@ const Voting = () => {
               Transaction confirmed
             </AlertDescription>
           </Alert>
-        }
+        */}
         {errorConfirmation &&
           <Alert className ="mb-4 bg-red-200">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Information</AlertTitle>
+            <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
-              {errorConfirmation?.cause?.reason ||
-              errorConfirmation?.data?.message ||
+              {errorConfirmation?.data?.message ||
               errorConfirmation?.shortMessage ||
               errorConfirmation?.message}
             </AlertDescription>
@@ -314,16 +328,27 @@ const Voting = () => {
         {error && 
           <Alert className ="mb-4 bg-red-200">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Information</AlertTitle>
+            <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
               {error.shortMessage || error.message}
             </AlertDescription>
           </Alert>
         }
       </div>
+      
+      <h2 className="mb-4 text-4xl">Get</h2>
+      <div className="flex">
+        what address you want to whitelist ? : <span className="font-bold"> 0x...</span>
+      </div>
+      <h2 className="mt-7 mb-4 text-4xl">Set whitelist address</h2>
+      
       <div className="flex">
         <Input placeholder="Address to whitelist :" onChange={(e) => setVoterAddress(e.target.value)}/>
-        <Button variant="outline" disabled={isPending} onClick={addVoterAddress}>
+        <Button variant="outline" disabled={isPending} onClick={() => {
+          addVoterAddress()
+          setToastWhitelist(true)
+        }
+          }>
           {isPending ? 'Setting...' : 'Set'} </Button>
       </div>
 
@@ -351,7 +376,9 @@ const Voting = () => {
           <Input placeholder="Address info to check :" //value={inputAddressToGet}
           onChange={(e) => {setInputAddressToGet(e.target.value)
           }} />
-          <Button variant="outline" onClick={() => {setAddressToQuery(inputAddressToGet)}}>
+          <Button variant="outline" onClick={() => {
+            setAddressToQuery(inputAddressToGet)
+            refetchGet()}}>
             {isLoadingVoterAddress ? 'Loading...' : 'Get'}
           </Button>
         </div>
@@ -393,22 +420,40 @@ const Voting = () => {
       
       <h2 className="mt-7 mb-4 text-4xl">Voter</h2>
       <div className ="flex">
-        <Input placeholder="Choose the the proposition ID you are voting for :"
+        <Input 
+          placeholder="Choose the the proposition ID you are voting for :"
           onChange={(e) => {
             const value = e.target.value
+            // Autoriser uniquement chiffres
+            if (!/^\d*$/.test(value)) {
+              toast.error("Only positive numbers are allowed")
+              return
+            }
             setVoterId(value === "" ? null : BigInt(value))
           }}/>
-        <Button variant="outline" onClick={() => {
-          if (voterId !== null) {
-            changeVoteCount(voterId)
+        <Button
+          variant="outline"
+          onClick={() => {
+            // Valeur vide
+            if (voterId === null) {
+              toast.error("Please enter a proposal ID")
+              return
+            }
+            // Pas un bigint ou négatif
+            if (typeof voterId !== "bigint" || voterId < 0n) {
+              toast.error("Invalid proposal ID: must be a positive number")
+              return
+            }
+            // OK → on vote
+            changeVoteCount(BigInt(voterId))
             setVoted(true)
-          }
-        }}>
-          {isLoading? "Loading..." : "Vote"}
+          }}
+        >
+          {isLoading ? "Loading..." : "Vote"}
         </Button>
       </div>
       
-      <h2 className="mt-7 mb-4 text-4xl">Propositions below</h2>
+      <h2 className="mt-7 mb-4 text-4xl">Propositions</h2>
       <div className="flex flex-col w-full">
         {propositionsData?.length === 0 && (
           <p>No proposition has been submitted for the moment</p>
@@ -416,9 +461,9 @@ const Voting = () => {
         {propositionsIsLoading && <p>Loading proposals...</p>}
         {propositionsError && <p>Error loading proposals</p>}
         <div className="flex flex-col gap-4">
-          {propositionsData?.map((proposal, index) => (
+          {propositionsData?.slice(1).map((proposal, index) => (
             <div key={index} className="rounded border p-4">
-              <h3 className="font-bold">Proposal #{index}</h3>
+              <h3 className="font-bold">Proposal #{index+1}</h3>
               <p>{proposal.description}</p>
               <p>Votes: {proposal.voteCount.toString()}</p>
             </div>
@@ -426,9 +471,7 @@ const Voting = () => {
         </div>
       </div>
 
-      <h2 className='mt-7 mb-3 text-4xl'>Winner</h2>
-      <h2 className='mt-7 mb-3 text-4xl'>
-        {theWinnerId ? `The winner is #${theWinnerId}` : "No winner for now"}
+      <h2 className='mt-7 mb-3 text-4xl'>{theWinnerId ? `The winner is #${theWinnerId}` : "No winner for now"}
       </h2>
       {theWinnerId ? (
         <>
@@ -436,7 +479,7 @@ const Voting = () => {
           <p>Votes: {winnerProposition?.voteCount.toString()}</p>
         </>
        ) : (
-        <p>No winner for the moment</p>
+        <p>The winner will be announced here</p>
       )}
       
     </div>
