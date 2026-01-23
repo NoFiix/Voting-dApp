@@ -33,7 +33,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           warning: "bg-yellow-500 text-black", // jaune = meilleur en noir
           info: "bg-blue-600 text-white",
         },
-      } as React.CSSProperties
+      } 
       }
       /*style={
         {

@@ -5,6 +5,11 @@ import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon, AlertCircle } from "luc
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectGroup, SelectItem,
+  SelectLabel, SelectTrigger, SelectValue,} from "@/components/ui/select"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Command, CommandInput, CommandList, CommandItem, CommandEmpty,} from "@/components/ui/command"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { contractAbi, contractAddress } from "@/constants";
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
@@ -28,8 +33,9 @@ const Voting = () => {
   const [voterProposition, setVoterProposition] = useState("");
   const [voterId, setVoterId] = useState<bigint | null>(null);
   const [voted, setVoted] = useState(false);
-
+  const [open, setOpen] = useState(false)
   const [toastWhitelist, setToastWhitelist] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<string | null>(null)
 
   const workflowLabels = [ 
         "RegisteringVoters",
@@ -101,7 +107,8 @@ const Voting = () => {
     isLoading: boolean
     refetch: any
    }
-   
+
+
   // Voter pour une proposition en choisissant un ID
   const changeVoteCount = (id: bigint) => {
     writeContract ({
@@ -286,9 +293,10 @@ const Voting = () => {
   
   return (
     <div className="flex flex-col w-full">
+      <div className="flex justify-center text-5xl mb-4">Alyra Voting dApp</div>
       <div className="flex flex-col w-full">
         {hash &&  
-          <Alert className ="mb-4 bg-lime-200">
+          <Alert className ="bg-lime-200">
             <CheckCircle2Icon/>
             <AlertTitle>Transaction confirmed</AlertTitle>
             <AlertDescription>
@@ -297,7 +305,7 @@ const Voting = () => {
           </Alert>
         }
         {isLoading && 
-          <Alert className ="mb-4 bg-amber-200">
+          <Alert className ="bg-amber-200">
             <CheckCircle2Icon/>
             <AlertTitle>Information</AlertTitle>
             <AlertDescription>
@@ -315,7 +323,7 @@ const Voting = () => {
           </Alert>
         */}
         {errorConfirmation &&
-          <Alert className ="mb-4 bg-red-200">
+          <Alert className ="bg-red-200">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
@@ -326,7 +334,7 @@ const Voting = () => {
           </Alert>
         }
         {error && 
-          <Alert className ="mb-4 bg-red-200">
+          <Alert className ="bg-red-200">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
@@ -336,10 +344,6 @@ const Voting = () => {
         }
       </div>
       
-      <h2 className="mb-4 text-4xl">Get</h2>
-      <div className="flex">
-        what address you want to whitelist ? : <span className="font-bold"> 0x...</span>
-      </div>
       <h2 className="mt-7 mb-4 text-4xl">Set whitelist address</h2>
       
       <div className="flex">
@@ -384,10 +388,10 @@ const Voting = () => {
         </div>
         
         {voterData && (
-          <div className="flex flex-col w-full ml-20 mt-3">
-            <p>Registered: {voterData?.isRegistered ? "Yes" : "No"}</p>
-            <p>Has Voted: {voterData?.hasVoted ? "Yes" : "No"}</p>
-            <p>Proposal Id: {voterData?.votedProposalId?.toString()}</p>
+          <div className="flex flex-col w-full ml-20 mt-1">
+            <Badge className="bg-sky-50 text-sky-700 text-1xl mb-1">Registered: {voterData?.isRegistered ? "Yes" : "No"}</Badge>
+            <Badge className="bg-sky-50 text-sky-700 text-1xl mb-1">Has Voted: {voterData?.hasVoted ? "Yes" : "No"}</Badge>
+            <Badge className="bg-sky-50 text-sky-700 text-1xl">Proposal Id: {voterData?.votedProposalId?.toString()}</Badge>
           </div>
         )}
       </div>
@@ -395,8 +399,13 @@ const Voting = () => {
       
       <h2 className="mb-4 mt-7 text-4xl">Worlkflow Status Changement</h2>
       <div className="flex gap-4 items-center">
-        <p> The actual Workflow status is at: 
-          {workflowStatus !== undefined && workflowLabels[Number(workflowStatus)]} </p>
+        <p>
+          The actual Workflow status is at: 
+        </p>
+        <Badge className="bg-sky-50 text-sky-700 text-1xl">
+          {workflowStatus !== undefined 
+          && workflowLabels[Number(workflowStatus)]}
+        </Badge>
         <Button variant="outline"
           onClick = {() => {
             workflowStatusChange()
@@ -405,6 +414,8 @@ const Voting = () => {
         </Button>
 
       </div>
+
+
 
       <h2 className="mt-7 mb-4 text-4xl">Proposal registration</h2>
       
@@ -418,6 +429,8 @@ const Voting = () => {
         </div>
       </div>
       
+
+
       <h2 className="mt-7 mb-4 text-4xl">Voter</h2>
       <div className ="flex">
         <Input 
@@ -452,12 +465,71 @@ const Voting = () => {
           {isLoading ? "Loading..." : "Vote"}
         </Button>
       </div>
+
+
+
+      <div className ="flex mt-2">
+        <Select
+          disabled={!propositionsData || propositionsData.length <= 1}
+          onValueChange={(v) => {
+            setSelectedProposal(v)
+            setVoterId(BigInt(v))
+          }}
+        >
+          <SelectTrigger className="w-full max-w-48">
+            <SelectValue 
+              placeholder={
+                propositionsData?.length > 1 
+                  ? "Vote for a proposal" 
+                  : "Voting process closed"
+              }
+            />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Which proposal you are voting for ?</SelectLabel>
+              {propositionsData?.slice(1).map((proposal, index) => (
+                  <SelectItem
+                    key={index + 1}
+                    value={(index + 1).toString()}
+                    className="rounded border p-2 mb-1"
+                  >
+                    <span className="font-medium">
+                      Proposal #{index + 1}
+                    </span>
+                    <span className="block text-sm text-muted-foreground">
+                      {proposal.description}
+                    </span>
+                  </SelectItem>
+                ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+
+
+      <h2 className='mt-7 mb-3 text-4xl'>
+        {theWinnerId ? `The winner is #${theWinnerId}` : "No winner for now"}
+      </h2>
+      {theWinnerId ? (
+        <>
+          <Badge className="bg-green-50 text-green-700 text-xl">Proposal: {winnerProposition?.description}</Badge>
+          <Badge className="bg-green-50 text-green-700 text-xl mt-2">Votes: {winnerProposition?.voteCount.toString()}</Badge>
+        </>
+       ) : (
+        <Badge className="bg-sky-50 text-sky-700 text-xl">The winner will be announced here</Badge>
+      )}
       
+
+
       <h2 className="mt-7 mb-4 text-4xl">Propositions</h2>
       <div className="flex flex-col w-full">
         {propositionsData?.length === 0 && (
-          <p>No proposition has been submitted for the moment</p>
+          <Badge className="bg-sky-50 text-sky-700 text-xl"> No proposition has been submitted for the moment </Badge>
         )}
+
         {propositionsIsLoading && <p>Loading proposals...</p>}
         {propositionsError && <p>Error loading proposals</p>}
         <div className="flex flex-col gap-4">
@@ -471,16 +543,6 @@ const Voting = () => {
         </div>
       </div>
 
-      <h2 className='mt-7 mb-3 text-4xl'>{theWinnerId ? `The winner is #${theWinnerId}` : "No winner for now"}
-      </h2>
-      {theWinnerId ? (
-        <>
-          <p>Proposal: {winnerProposition?.description}</p>
-          <p>Votes: {winnerProposition?.voteCount.toString()}</p>
-        </>
-       ) : (
-        <p>The winner will be announced here</p>
-      )}
       
     </div>
   )
