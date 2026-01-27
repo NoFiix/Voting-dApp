@@ -7,7 +7,6 @@ import { Toaster } from "@/components/ui/sonner"
 import Providers from "./providers";
 
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,12 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
+        <CustomRainbowKitProvider>
           <Layout>
             {children}
             <Toaster />
           </Layout>
-        </Providers>
+        </CustomRainbowKitProvider>
       </body>
     </html>
   );
