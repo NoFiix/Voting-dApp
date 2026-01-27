@@ -13,9 +13,9 @@ import {
 
 const config = getDefaultConfig({
   appName: 'My RainbowKit App',
-  projectId: '63e762f3df0005136ad13f5e8495ef4b',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
   chains: [sepolia],
-  ssr: true, // If your dApp uses server side rendering (SSR)
+  ssr: false, // If your dApp uses server side rendering (SSR)
 });
 
 
