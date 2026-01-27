@@ -58,6 +58,7 @@ const Voting = () => {
   }
   
   // Get Voter 
+
   const {data: voterData, error: errorToGetVoter, isLoading: isLoadingVoterAddress, refetch: refetchGet
   } = useReadContract({
     address: contractAddress,
@@ -66,9 +67,9 @@ const Voting = () => {
     args: [addressToQuery],
     query: {
       enabled: false,
-      refetchOnMount: true,           // 👈 Ne pas refetch au montage du composant
+      /*refetchOnMount: true,           // 👈 Ne pas refetch au montage du composant
       refetchOnReconnect: false,       // 👈 Ne pas refetch à la reconnexion
-      gcTime: 0, 
+      gcTime: 0, */
     }
   }) as { 
     data: {
@@ -80,7 +81,7 @@ const Voting = () => {
       isLoading: boolean
       refetch: any
     }
-
+    
   // send a proposition
   const sendProposition = async() => {
     writeContract ({
@@ -291,6 +292,30 @@ const Voting = () => {
   }, [isSuccess, errorConfirmation, refetchPropositions, voted, error, refetchWorkflowStatus])
 
   
+
+
+
+
+  console.log("Am I whitelisted?", voterData?.isRegistered)
+
+    // Ajoute ça dans ton composant
+  useEffect(() => {
+    console.log("=== DEBUG INFO ===")
+    console.log("Contract address:", contractAddress)
+    console.log("My wallet address:", address)
+    console.log("Workflow status:", workflowStatus)
+  }, [address, contractAddress, workflowStatus])
+
+  // Avant d'appeler getVoter
+  const handleGetVoter = async () => {
+    console.log("Querying voter for address:", inputAddressToGet)
+    setAddressToQuery(inputAddressToGet)
+  }
+
+
+
+
+
   return (
     <div className="flex flex-col w-full">
       <div className="flex justify-center text-5xl mb-4">Alyra Voting dApp</div>
@@ -382,7 +407,8 @@ const Voting = () => {
           }} />
           <Button variant="outline" onClick={() => {
             setAddressToQuery(inputAddressToGet)
-            refetchGet()}}>
+            refetchGet()}}
+          >
             {isLoadingVoterAddress ? 'Loading...' : 'Get'}
           </Button>
         </div>
@@ -453,7 +479,7 @@ const Voting = () => {
               return
             }
             // Pas un bigint ou négatif
-            if (typeof voterId !== "bigint" || voterId < 0n) {
+            if (typeof voterId !== "bigint" || voterId < 0) {
               toast.error("Invalid proposal ID: must be a positive number")
               return
             }

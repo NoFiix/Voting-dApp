@@ -5,10 +5,7 @@ import {
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import {
-  hardhat,
-  sepolia,
-} from 'wagmi/chains';
+import { sepolia } from '@/utils/sepolia';
 import {
   QueryClientProvider,
   QueryClient,
@@ -17,7 +14,7 @@ import {
 const config = getDefaultConfig({
   appName: 'My RainbowKit App',
   projectId: '63e762f3df0005136ad13f5e8495ef4b',
-  chains: [hardhat, sepolia],
+  chains: [sepolia],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
 

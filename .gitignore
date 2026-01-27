@@ -8,3 +8,5 @@ Frontend/dist/
 Backend/artifacts/
 Backend/cache/
 Backend/typechain/
+
+.env*.local
