@@ -1,36 +1,35 @@
-'use client'
-import '@rainbow-me/rainbowkit/styles.css'; 
-import {
-  getDefaultConfig,
-  RainbowKitProvider,
-} from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
-import { sepolia } from '@/utils/sepolia';
-import {
-  QueryClientProvider,
-  QueryClient,
-} from "@tanstack/react-query";
+'use client';
+
+import '@rainbow-me/rainbowkit/styles.css';
+import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { WagmiProvider, http } from 'wagmi';
+import { sepolia } from 'viem/chains';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
 const config = getDefaultConfig({
   appName: 'My RainbowKit App',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
   chains: [sepolia],
-  ssr: false, // If your dApp uses server side rendering (SSR)
+  ssr: false,
+  transports: {
+    [sepolia.id]: http(process.env.NEXT_PUBLIC_INFURA_RPC),
+  },
 });
-
 
 const queryClient = new QueryClient();
 
-import { PropsWithChildren } from "react";
-const CustomRainbowKitProvider = ({ children }: PropsWithChildren) => {
+export default function CustomRainbowKitProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>{children}</RainbowKitProvider>
+        <RainbowKitProvider>
+          {children}
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
-};
-
-export default CustomRainbowKitProvider;
-
+}

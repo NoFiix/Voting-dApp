@@ -98,7 +98,9 @@ const Voting = () => {
     address: contractAddress,
     abi: contractAbi,
     functionName:'getProposals',
-    enabled: false,
+    query: {
+      enabled: false,
+    }
   }) as { data:
    {
     description: string
@@ -126,7 +128,9 @@ const Voting = () => {
       address : contractAddress,
       abi: contractAbi,
       functionName : 'winningProposalID',
-      enabled: false,
+      query: {
+        enabled: false,
+      }
     }) 
 
   // Winner Proposition
@@ -136,7 +140,9 @@ const Voting = () => {
       abi: contractAbi,
       functionName: 'getOneProposal',
       args: [theWinnerId],
-      enabled: false,
+      query: {
+        enabled: false,
+      }
     }) as {data : {
     description: string
     voteCount: bigint
@@ -229,16 +235,17 @@ const Voting = () => {
     // erreur AVANT minage (adresse invalide, revert immédiat)
     if (error && toastWhitelist) {
       toast.error(
-        error.shortMessage ||
-        error.message ||
-        "Whitelist failed"
+        (error as any)?.shortMessage ||  // ← Essaie d'abord shortMessage
+        error.message ||                  // ← Sinon message
+        "Whitelist failed"                // ← Fallback
       );
       setToastWhitelist(false);
     }
     // erreur APRÈS envoi (revert on-chain)
     if (errorConfirmation && toastWhitelist) {
       toast.error(
-        errorConfirmation?.message ||
+        (errorConfirmation as any)?.shortMessage ||  // ← Essaie d'abord shortMessage
+        errorConfirmation.message ||  
         "Whitelist failed"
       );
       setToastWhitelist(false);
@@ -282,11 +289,11 @@ const Voting = () => {
     }
     if (isSuccess && voted){
       toast.success("Your vote have been contabelized");
-      setVoterAddress(false);
+      setVoterAddress('false');
     }
     if ((errorConfirmation && voted) || (error && voted)) {
       toast.error(errorConfirmation?.message)
-      setVoterAddress(false);
+      setVoterAddress('false');
     }
 
   }, [isSuccess, errorConfirmation, refetchPropositions, voted, error, refetchWorkflowStatus])
@@ -352,9 +359,9 @@ const Voting = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
-              {errorConfirmation?.data?.message ||
-              errorConfirmation?.shortMessage ||
-              errorConfirmation?.message}
+              {(errorConfirmation as any)?.data?.message ||
+              (errorConfirmation as any)?.shortMessage ||
+              (errorConfirmation as any)?.message}
             </AlertDescription>
           </Alert>
         }
@@ -363,7 +370,7 @@ const Voting = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error information</AlertTitle>
             <AlertDescription>
-              {error.shortMessage || error.message}
+              {(error as any)?.shortMessage || error.message}
             </AlertDescription>
           </Alert>
         }
@@ -505,7 +512,7 @@ const Voting = () => {
           <SelectTrigger className="w-full max-w-48">
             <SelectValue 
               placeholder={
-                propositionsData?.length > 1 
+                (propositionsData?.length ?? 0) > 1 
                   ? "Vote for a proposal" 
                   : "Voting process closed"
               }
