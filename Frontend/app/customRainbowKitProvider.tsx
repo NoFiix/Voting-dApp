@@ -31,5 +31,5 @@ export default function CustomRainbowKitProvider({
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  );
+  ); 
 }
