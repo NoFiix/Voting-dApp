@@ -429,6 +429,12 @@ const Voting = () => {
         )}
       </div>
       
+      <h2 className="mb-4 mt-7 text-4xl">Get New Status</h2>
+      <div className="flex gap-4 items-center">
+        <p>
+          Nouvelle fonctionnalité à rajouter ici 
+        </p>
+      </div>
       
       <h2 className="mb-4 mt-7 text-4xl">Worlkflow Status Changement</h2>
       <div className="flex gap-4 items-center">
