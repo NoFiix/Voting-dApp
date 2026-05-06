@@ -1,7 +1,9 @@
-## 🔗 Liens
+Solidity voting contract with proposition-based state machine and role-based access · Sepolia · Next.js + wagmi + RainbowKit
 
-🎥 Démo vidéo du Front  
+## 🔗 Links
+
+🎥 Frontend Demo video 
 👉 https://youtu.be/XzrV1JNg3DE
 
-🌍 Déploiement public de la dApp  
+🌍 Public Deploiement of the dApp  
 👉 https://voting-d-app-3cxc.vercel.app/
